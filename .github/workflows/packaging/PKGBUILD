@@ -12,7 +12,7 @@ depends=(
     'libappindicator-gtk3'
     'librsvg'
     'patchelf'
-    'libmpv'
+    'mpv'
     'ffmpeg'
     'yt-dlp'
     'openssl'
