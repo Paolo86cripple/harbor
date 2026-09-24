@@ -4,7 +4,7 @@ pkgver=1.0.0
 pkgrel=1
 pkgdesc="A Custom Stremio Client Built for Adventure"
 arch=('x86_64')
-url="https://github.com/Paolo86cripple/harbor"
+url="https://github.com/harborstremio/harbor"
 license=('MIT')
 depends=(
     'webkit2gtk-4.1'
@@ -28,7 +28,7 @@ makedepends=(
     'wasm-pack'
     'base-devel'
 )
-source=("$pkgname::git+https://github.com/Paolo86cripple/harbor.git")
+source=("$pkgname::git+https://github.com/harborstremio/harbor.git")
 sha256sums=('SKIP')
 # -lto: makepkg mette -flto in CFLAGS; ring compila oggetti C/asm in bitcode GIMPLE
 # che ld.lld non legge -> "undefined symbol: ring_core_0_17_14__*"
