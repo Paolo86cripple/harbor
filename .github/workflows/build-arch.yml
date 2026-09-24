@@ -40,12 +40,19 @@ jobs:
           mkdir -p /tmp/makepkg
           chown builder:builder /tmp/makepkg
 
-      - name: Add swap space
+            - name: Add swap space
         run: |
+          # Disattiva eventuali swapfile esistenti
+          swapoff /swapfile 2>/dev/null || true
+          # Rimuovi il file residuo
+          rm -f /swapfile
+          # Ricrea il file di swap da 4GB
           fallocate -l 4G /swapfile
           chmod 600 /swapfile
           mkswap /swapfile
           swapon /swapfile
+          # Verifica che lo swap sia attivo
+          swapon --show
 
       - name: Prepare PKGBUILD
         run: |
