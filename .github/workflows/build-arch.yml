@@ -2,6 +2,7 @@ name: Build Arch Linux Package (Daily)
 
 on:
   schedule:
+    # Esegue ogni giorno a mezzanotte UTC
     - cron: '0 0 * * *'
   workflow_dispatch:
 
@@ -12,7 +13,7 @@ jobs:
       image: archlinux:base-devel
       options: --privileged
     env:
-      CARGO_BUILD_JOBS: 1
+      CARGO_BUILD_JOBS: 2
       RUSTFLAGS: "-C debuginfo=0"
       NODE_OPTIONS: "--max-old-space-size=4096"
 
@@ -40,18 +41,18 @@ jobs:
           mkdir -p /tmp/makepkg
           chown builder:builder /tmp/makepkg
 
-            - name: Add swap space
+      - name: Add swap space
         run: |
           # Disattiva eventuali swapfile esistenti
           swapoff /swapfile 2>/dev/null || true
-          # Rimuovi il file residuo
+          # Rimuovi file residuo
           rm -f /swapfile
-          # Ricrea il file di swap da 4GB
+          # Crea un nuovo swapfile da 4 GB
           fallocate -l 4G /swapfile
           chmod 600 /swapfile
           mkswap /swapfile
           swapon /swapfile
-          # Verifica che lo swap sia attivo
+          # Verifica
           swapon --show
 
       - name: Prepare PKGBUILD
