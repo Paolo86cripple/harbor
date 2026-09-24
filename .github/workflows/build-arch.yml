@@ -17,15 +17,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Update system and install dependencies
+        - name: Update system and install dependencies
         run: |
           pacman -Syu --noconfirm
           pacman -S --noconfirm --needed \
-            git nodejs npm pnpm rust cargo wasm-pack \
-            webkit2gtk gtk3 libappindicator-gtk3 librsvg patchelf \
+            git nodejs npm pnpm rust wasm-pack \
+            webkit2gtk-4.1 gtk3 libappindicator-gtk3 librsvg patchelf \
             sudo fakeroot
-            depends=('webkit2gtk-4.1' 'gtk3' 'libappindicator-gtk3' 'librsvg' 'patchelf')
-            makedepends=('git' 'nodejs' 'pnpm' 'rust' 'wasm-pack' 'base-devel')
 
       - name: Create non-root user for makepkg
         run: |
