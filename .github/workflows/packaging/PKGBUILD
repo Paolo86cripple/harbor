@@ -6,8 +6,8 @@ pkgdesc="A Custom Stremio Client Built for Adventure"
 arch=('x86_64')
 url="https://github.com/harborstremio/harbor"
 license=('MIT')
-depends=('webkit2gtk' 'gtk3' 'libappindicator-gtk3' 'librsvg' 'patchelf')
-makedepends=('git' 'nodejs' 'pnpm' 'rust' 'cargo' 'wasm-pack' 'base-devel')
+depends=('webkit2gtk-4.1' 'gtk3' 'libappindicator-gtk3' 'librsvg' 'patchelf')
+makedepends=('git' 'nodejs' 'pnpm' 'rust' 'wasm-pack' 'base-devel')
 source=("$pkgname::git+https://github.com/harborstremio/harbor.git#branch=master")
 sha256sums=('SKIP')
 
