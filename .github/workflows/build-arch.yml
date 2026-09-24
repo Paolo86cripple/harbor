@@ -4,7 +4,7 @@ on:
   schedule:
     # Esegue ogni giorno a mezzanotte UTC
     - cron: '0 0 * * *'
-  workflow_dispatch:  # Permette l'esecuzione manuale
+  workflow_dispatch:  # Esecuzione manuale
 
 jobs:
   build:
@@ -17,12 +17,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-        - name: Update system and install dependencies
+      - name: Update system and install dependencies
         run: |
           pacman -Syu --noconfirm
           pacman -S --noconfirm --needed \
-            git nodejs npm pnpm rust wasm-pack \
+            git nodejs pnpm rust wasm-pack \
             webkit2gtk-4.1 gtk3 libappindicator-gtk3 librsvg patchelf \
+            libmpv ffmpeg yt-dlp openssl file curl wget \
             sudo fakeroot
 
       - name: Create non-root user for makepkg
@@ -32,12 +33,30 @@ jobs:
 
       - name: Prepare PKGBUILD
         run: |
-          # Aggiorna la versione con la data corrente
+          # Aggiorna la versione con la data corrente (YYYYMMDD)
           pkgver=$(date +%Y%m%d)
           sed -i "s/pkgver=.*/pkgver=$pkgver/" packaging/PKGBUILD
-          # Copia il PKGBUILD nella home del builder
           cp packaging/PKGBUILD /home/builder/
           chown builder:builder /home/builder/PKGBUILD
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: /home/builder/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Cache cargo registry and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/builder/.cargo/registry
+            /home/builder/.cargo/git
+            /home/builder/harbor/src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Build package
         run: |
@@ -57,7 +76,7 @@ jobs:
           path: ${{ steps.find_package.outputs.pkgfile }}
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: daily-${{ github.run_number }}
           name: "Daily Build ${{ github.run_number }}"
