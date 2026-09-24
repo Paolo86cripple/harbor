@@ -13,8 +13,11 @@ jobs:
       options: --privileged
     env:
       CARGO_BUILD_JOBS: 1
+      CARGO_PROFILE_RELEASE_DEBUG: "false"
+      CARGO_PROFILE_RELEASE_LTO: "false"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
       RUSTFLAGS: "-C debuginfo=0 -C codegen-units=1"
-      NODE_OPTIONS: "--max-old-space-size=4096"
+      NODE_OPTIONS: "--max-old-space-size=3072"
 
     steps:
       - name: Checkout repository
@@ -39,22 +42,6 @@ jobs:
           echo "BUILDDIR=/tmp/makepkg" >> /etc/makepkg.conf
           mkdir -p /tmp/makepkg
           chown builder:builder /tmp/makepkg
-
-      - name: Add swap space
-        run: |
-          # Disattiva qualsiasi swap attivo
-          swapoff -a 2>/dev/null || true
-          # Rimuovi il vecchio file di swap
-          rm -f /swapfile 2>/dev/null || true
-          # Crea un nuovo file di swap in /tmp
-          SWAPFILE="/tmp/swapfile"
-          dd if=/dev/zero of="$SWAPFILE" bs=1M count=4096 status=progress
-          chmod 600 "$SWAPFILE"
-          mkswap "$SWAPFILE"
-          swapon "$SWAPFILE"
-          # Verifica
-          swapon --show
-          free -h
 
       - name: Prepare PKGBUILD
         run: |
