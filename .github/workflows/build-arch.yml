@@ -11,6 +11,10 @@ jobs:
     container:
       image: archlinux:base-devel
       options: --privileged
+    env:
+      CARGO_BUILD_JOBS: 1
+      RUSTFLAGS: "-C debuginfo=0"
+      NODE_OPTIONS: "--max-old-space-size=4096"
 
     steps:
       - name: Checkout repository
@@ -29,6 +33,19 @@ jobs:
         run: |
           useradd -m builder
           echo "builder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+      - name: Configure makepkg to use disk instead of tmpfs
+        run: |
+          echo "BUILDDIR=/tmp/makepkg" >> /etc/makepkg.conf
+          mkdir -p /tmp/makepkg
+          chown builder:builder /tmp/makepkg
+
+      - name: Add swap space
+        run: |
+          fallocate -l 6G /swapfile
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
 
       - name: Prepare PKGBUILD
         run: |
