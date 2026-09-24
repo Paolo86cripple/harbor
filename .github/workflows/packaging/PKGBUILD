@@ -1,35 +1,67 @@
-# Maintainer: Il tuo nome <tua@email.com>
+# Maintainer: Paolo Bossi <pbossi86@gmail.com>
 pkgname=harbor
-pkgver=1.0.0  # Verrà sovrascritto dal workflow
+pkgver=1.0.0  # Verrà sovrascritto dinamicamente dal workflow
 pkgrel=1
 pkgdesc="A Custom Stremio Client Built for Adventure"
 arch=('x86_64')
 url="https://github.com/harborstremio/harbor"
 license=('MIT')
-depends=('webkit2gtk-4.1' 'gtk3' 'libappindicator-gtk3' 'librsvg' 'patchelf')
-makedepends=('git' 'nodejs' 'pnpm' 'rust' 'wasm-pack' 'base-devel')
+depends=(
+    'webkit2gtk-4.1'
+    'gtk3'
+    'libappindicator-gtk3'
+    'librsvg'
+    'patchelf'
+    'libmpv'
+    'ffmpeg'
+    'yt-dlp'
+    'openssl'
+    'file'
+    'curl'
+    'wget'
+)
+makedepends=(
+    'git'
+    'nodejs'
+    'pnpm'
+    'rust'
+    'wasm-pack'
+    'base-devel'
+)
 source=("$pkgname::git+https://github.com/harborstremio/harbor.git#branch=master")
 sha256sums=('SKIP')
 
 build() {
-  cd "$srcdir/$pkgname"
-  pnpm install --frozen-lockfile
-  pnpm run setup
-  pnpm tauri build --bundles deb  # Genera solo il bundle deb per estrarre i file
+    cd "$srcdir/$pkgname"
+    pnpm install --frozen-lockfile
+    pnpm run setup
+    pnpm tauri build --bundles deb
 }
 
 package() {
-  cd "$srcdir/$pkgname"
-  
-  # Installa l'eseguibile principale
-  install -Dm755 "src-tauri/target/release/harbor" "$pkgdir/usr/bin/harbor"
-  
-  # Installa le risorse (icone, file .desktop, ecc.)
-  install -d "$pkgdir/usr/lib/harbor"
-  cp -r "src-tauri/target/release/bundle/deb/"* "$pkgdir/usr/lib/harbor/" 2>/dev/null || true
-  
-  # Crea il file .desktop
-  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/harbor.desktop" <<EOF
+    cd "$srcdir/$pkgname"
+
+    # Installa l'eseguibile principale
+    install -Dm755 "src-tauri/target/release/harbor" "$pkgdir/usr/bin/harbor"
+
+    # Installa le risorse dal bundle deb generato da Tauri
+    # (icone, file .desktop, metadati)
+    local deb_dir="src-tauri/target/release/bundle/deb"
+    if [ -d "$deb_dir" ]; then
+        # Estrae il contenuto del .deb per ottenere i file già organizzati
+        local deb_file
+        deb_file=$(find "$deb_dir" -name "*.deb" | head -n 1)
+        if [ -n "$deb_file" ]; then
+            bsdtar -xf "$deb_file" -C "$srcdir"
+            if [ -d "$srcdir/data" ]; then
+                cp -r "$srcdir/data/"* "$pkgdir/"
+            fi
+        fi
+    fi
+
+    # Fallback: crea manualmente il file .desktop se non presente
+    if [ ! -f "$pkgdir/usr/share/applications/harbor.desktop" ]; then
+        install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/harbor.desktop" <<EOF
 [Desktop Entry]
 Name=Harbor
 Comment=A Custom Stremio Client
@@ -39,4 +71,10 @@ Terminal=false
 Type=Application
 Categories=AudioVideo;Player;
 EOF
+    fi
+
+    # Installa l'icona se non già inclusa
+    if [ ! -f "$pkgdir/usr/share/icons/hicolor/256x256/apps/harbor.png" ] && [ -f "src-tauri/icons/icon.png" ]; then
+        install -Dm644 "src-tauri/icons/icon.png" "$pkgdir/usr/share/icons/hicolor/256x256/apps/harbor.png"
+    fi
 }
