@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,6 +19,8 @@ jobs:
       CARGO_PROFILE_RELEASE_DEBUG: "false"
       CARGO_PROFILE_RELEASE_LTO: "false"
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
+      CC: gcc
+      CXX: g++
       RUSTFLAGS: "-C debuginfo=0 -C codegen-units=1"
       NODE_OPTIONS: "--max-old-space-size=3072"
 
@@ -58,20 +63,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
-      - name: Cache cargo registry and build
+      - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
             /home/builder/.cargo/registry
             /home/builder/.cargo/git
-            /home/builder/harbor/src-tauri/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
 
       - name: Build package
         run: |
-          su builder -c "cd /home/builder && makepkg -s --noconfirm"
+          su builder -c "cd /home/builder && makepkg -s --noconfirm --noprogressbar"
 
       - name: Find built package
         id: find_package

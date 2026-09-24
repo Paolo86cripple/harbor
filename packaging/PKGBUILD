@@ -1,10 +1,10 @@
 # Maintainer: Paolo Bossi <pbossi86@gmail.com>
 pkgname=harbor
-pkgver=1.0.0  # Verrà sovrascritto dinamicamente dal workflow
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="A Custom Stremio Client Built for Adventure"
 arch=('x86_64')
-url="https://github.com/harborstremio/harbor"
+url="https://github.com/Paolo86cripple/harbor"
 license=('MIT')
 depends=(
     'webkit2gtk-4.1'
@@ -28,11 +28,21 @@ makedepends=(
     'wasm-pack'
     'base-devel'
 )
-source=("$pkgname::git+https://github.com/harborstremio/harbor.git")
+source=("$pkgname::git+https://github.com/Paolo86cripple/harbor.git")
 sha256sums=('SKIP')
+# -lto: makepkg mette -flto in CFLAGS; ring compila oggetti C/asm in bitcode GIMPLE
+# che ld.lld non legge -> "undefined symbol: ring_core_0_17_14__*"
+options=('!lto' '!debug' '!strip')
 
 build() {
     cd "$srcdir/$pkgname"
+
+    # Difesa in profondità: niente LTO negli oggetti C compilati dai build.rs (ring, aws-lc-sys)
+    export CFLAGS="${CFLAGS//-flto=auto/}"; export CFLAGS="${CFLAGS//-flto/}"
+    export CXXFLAGS="${CXXFLAGS//-flto=auto/}"; export CXXFLAGS="${CXXFLAGS//-flto/}"
+    export LDFLAGS="${LDFLAGS//-flto=auto/}"; export LDFLAGS="${LDFLAGS//-flto/}"
+    export CC=gcc CXX=g++ AR=ar
+
     pnpm install --frozen-lockfile
     pnpm run setup
     pnpm tauri build --bundles deb
@@ -41,23 +51,17 @@ build() {
 package() {
     cd "$srcdir/$pkgname"
 
-    # Installa l'eseguibile principale
-    install -Dm755 "src-tauri/target/release/harbor" "$pkgdir/usr/bin/harbor"
-
-    # Installa le risorse dal bundle deb generato da Tauri
-    # (icone, file .desktop, metadati)
-    local deb_dir="src-tauri/target/release/bundle/deb"
-    if [ -d "$deb_dir" ]; then
-        # Estrae il contenuto del .deb per ottenere i file già organizzati
-        local deb_file
-        deb_file=$(find "$deb_dir" -name "*.deb" | head -n 1)
-        if [ -n "$deb_file" ]; then
-            bsdtar -xf "$deb_file" -C "$srcdir"
-            if [ -d "$srcdir/data" ]; then
-                cp -r "$srcdir/data/"* "$pkgdir/"
-            fi
-        fi
+    # Tauri lascia il contenuto già spacchettato del .deb in bundle/deb/<nome>/data
+    local data_dir
+    data_dir=$(find src-tauri/target/release/bundle/deb -maxdepth 2 -type d -name data | head -n 1)
+    if [ -n "$data_dir" ]; then
+        cp -a "$data_dir/." "$pkgdir/"
+        # yt-dlp/ffmpeg/ffprobe sono già forniti dai pacchetti di sistema (dipendenze)
+        rm -f "$pkgdir"/usr/bin/{yt-dlp,ffmpeg,ffprobe}
     fi
+
+    # Il binario principale deve sempre esserci
+    [ -x "$pkgdir/usr/bin/harbor" ] || install -Dm755 "src-tauri/target/release/harbor" "$pkgdir/usr/bin/harbor"
 
     # Fallback: crea manualmente il file .desktop se non presente
     if [ ! -f "$pkgdir/usr/share/applications/harbor.desktop" ]; then
