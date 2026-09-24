@@ -1,0 +1,42 @@
+# Maintainer: Il tuo nome <tua@email.com>
+pkgname=harbor
+pkgver=1.0.0  # Verrà sovrascritto dal workflow
+pkgrel=1
+pkgdesc="A Custom Stremio Client Built for Adventure"
+arch=('x86_64')
+url="https://github.com/harborstremio/harbor"
+license=('MIT')
+depends=('webkit2gtk' 'gtk3' 'libappindicator-gtk3' 'librsvg' 'patchelf')
+makedepends=('git' 'nodejs' 'pnpm' 'rust' 'cargo' 'wasm-pack' 'base-devel')
+source=("$pkgname::git+https://github.com/harborstremio/harbor.git#branch=master")
+sha256sums=('SKIP')
+
+build() {
+  cd "$srcdir/$pkgname"
+  pnpm install --frozen-lockfile
+  pnpm run setup
+  pnpm tauri build --bundles deb  # Genera solo il bundle deb per estrarre i file
+}
+
+package() {
+  cd "$srcdir/$pkgname"
+  
+  # Installa l'eseguibile principale
+  install -Dm755 "src-tauri/target/release/harbor" "$pkgdir/usr/bin/harbor"
+  
+  # Installa le risorse (icone, file .desktop, ecc.)
+  install -d "$pkgdir/usr/lib/harbor"
+  cp -r "src-tauri/target/release/bundle/deb/"* "$pkgdir/usr/lib/harbor/" 2>/dev/null || true
+  
+  # Crea il file .desktop
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/harbor.desktop" <<EOF
+[Desktop Entry]
+Name=Harbor
+Comment=A Custom Stremio Client
+Exec=harbor
+Icon=harbor
+Terminal=false
+Type=Application
+Categories=AudioVideo;Player;
+EOF
+}
