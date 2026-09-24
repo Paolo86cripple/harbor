@@ -28,7 +28,7 @@ makedepends=(
     'wasm-pack'
     'base-devel'
 )
-source=("$pkgname::git+https://github.com/harborstremio/harbor.git#branch=master")
+source=("$pkgname::git+https://github.com/harborstremio/harbor.git")
 sha256sums=('SKIP')
 
 build() {
