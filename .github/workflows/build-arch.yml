@@ -2,9 +2,8 @@ name: Build Arch Linux Package (Daily)
 
 on:
   schedule:
-    # Esegue ogni giorno a mezzanotte UTC
     - cron: '0 0 * * *'
-  workflow_dispatch:  # Esecuzione manuale
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,7 +22,7 @@ jobs:
           pacman -S --noconfirm --needed \
             git nodejs pnpm rust wasm-pack \
             webkit2gtk-4.1 gtk3 libappindicator-gtk3 librsvg patchelf \
-            libmpv ffmpeg yt-dlp openssl file curl wget \
+            mpv ffmpeg yt-dlp openssl file curl wget \
             sudo fakeroot
 
       - name: Create non-root user for makepkg
@@ -33,7 +32,6 @@ jobs:
 
       - name: Prepare PKGBUILD
         run: |
-          # Aggiorna la versione con la data corrente (YYYYMMDD)
           pkgver=$(date +%Y%m%d)
           sed -i "s/pkgver=.*/pkgver=$pkgver/" packaging/PKGBUILD
           cp packaging/PKGBUILD /home/builder/
